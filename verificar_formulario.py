@@ -16,7 +16,7 @@ def validar_telefono(telefono):
 
 def validar_fecha(fecha):
     # Ajusta el patrón según el formato de fecha que desees validar
-    patron = r"^\d{4}-\d{2}-\d{2}$"  # Ejemplo: YYYY-MM-DD
+    patron = r"^\d{2}/\d{2}/\d{4}$"  
     return re.match(patron, fecha)
 
 # Título de la aplicación
@@ -29,7 +29,7 @@ st.subheader("Desarrollado por Alejandro Gómez Franco")
 nombre = st.text_input("Ingrese su nombre")
 email = st.text_input("Ingrese su correo electrónico")
 telefono = st.text_input("Ingrese su número de teléfono")
-fecha = st.text_input("Ingrese una fecha (AAAA-MM-DD)")
+fecha = st.text_input("Ingrese una fecha (DD/MM/AAAA)")
 
 # Botón para validar los datos
 if st.button("Validar"):
@@ -51,4 +51,4 @@ if st.button("Validar"):
     if validar_fecha(fecha):
         st.success("Fecha válida.")
     else:
-        st.error("Fecha inválida. Utilice el formato AAAA-MM-DD.")
+        st.error("Fecha inválida. Utilice el formato DD/MM/AAAA.")
