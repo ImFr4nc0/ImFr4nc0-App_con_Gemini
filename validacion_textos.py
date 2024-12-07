@@ -3,6 +3,10 @@ import re
 
 # Títulos de la app
 st.title("Validador de Textos Comunes")
+
+# Subtítulo indicando el autor
+st.subheader("Desarrollado por Alejandro Gómez Franco")
+
 st.write("Ingresa un texto y selecciona el tipo de validación que deseas realizar.")
 
 # Entrada de texto
