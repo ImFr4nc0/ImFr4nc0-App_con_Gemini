@@ -21,9 +21,9 @@ validation_type = st.selectbox(
 # Función para validar con regex
 def validate_input(text, validation_type):
     patterns = {
-        "Correo electrónico": r"^\w+@\w+\.\w+$",
-        "Número de teléfono": r"^\+?\d{1,3}[-.\s]?\(?\d+\)?[-.\s]?\d+$",
-        "URL": r"^https?://[\w./]+$"
+        "Correo electrónico": r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.\w{2,}",
+        "Número de teléfono": r"^\d{3}[\s-]?\d{3}[\s-]?\d{4}",
+        "URL": r"^https?:\/\/\S+"
     }
     pattern = patterns.get(validation_type, "")
     if re.match(pattern, text):
