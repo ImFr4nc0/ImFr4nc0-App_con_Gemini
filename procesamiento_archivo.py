@@ -1,76 +1,70 @@
 import streamlit as st
 import pandas as pd
 import re
-import openpyxl
-import requests
+import xlsxwriter
+from io import BytesIO
 
-def extraer_datos(url):
-    """
-    Extrae datos de un archivo CSV alojado en GitHub y los exporta a un archivo Excel.
+# Función para procesar el archivo y generar el Excel
+def process_file(uploaded_file):
+    # Leer el archivo subido como texto plano
+    raw_data = pd.read_csv(uploaded_file, header=None, encoding='utf-8')
+    raw_text = raw_data.to_string(index=False, header=False)
+    
+    # Patrones regex para extraer información
+    serial_pattern = r'\b\d{6,}\b'
+    product_pattern = r'\b(Tv|Tablet|Radio|Modem|Celular)\b'
+    value_pattern = r'\$\d+\.\d{2}'
+    date_pattern = r'\b\d{2}/\d{2}/\d{2}\b'
+    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    phone_pattern = r'\+?\d{2,3} \d{6,10}'
+    name_pattern = r'[A-Z][a-z]+(?: [A-Z][a-z]+)*'
+    
+    # Extraer datos usando regex
+    serials = re.findall(serial_pattern, raw_text)
+    products = re.findall(product_pattern, raw_text)
+    values = re.findall(value_pattern, raw_text)
+    dates = re.findall(date_pattern, raw_text)
+    emails = re.findall(email_pattern, raw_text)
+    phones = re.findall(phone_pattern, raw_text)
+    names = re.findall(name_pattern, raw_text)
+    
+    # Emparejar los datos extraídos
+    rows = zip(serials, products, values, dates, names, emails, phones)
+    
+    # Crear el archivo Excel en memoria
+    output = BytesIO()
+    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    worksheet = workbook.add_worksheet()
 
-    Args:
-        url (str): La URL del archivo CSV en GitHub.
-    """
+    # Escribir encabezados
+    headers = ["Número de Serie", "Nombre del Producto", "Valor", "Fecha de Compra", "Nombre Cliente", "Correo Electrónico", "Teléfono"]
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header)
 
-    # Descargar el archivo CSV
-    response = requests.get(url)
-    open('temp.csv', 'wb').write(response.content)
+    # Escribir datos
+    for row_idx, row_data in enumerate(rows, start=1):
+        for col_idx, cell_data in enumerate(row_data):
+            worksheet.write(row_idx, col_idx, cell_data)
 
-    # Leer el archivo CSV (ajusta el separador y el encabezado si es necesario)
-    df = pd.read_csv('temp.csv', sep=',', header=None)
+    workbook.close()
+    output.seek(0)  # Posicionar el cursor al inicio del archivo
+    return output
 
-    # Definir las expresiones regulares (ajusta según tu formato de CSV)
-    pattern_producto = r"(\d+)\s+(\w+)\s+(\$\d+\.\d+)\s+(\d{2}/\d{2}/\d{2})"
-    pattern_cliente = r"(\w+\s+\w+)\s+(\S+@\S+)\s+(\+\d{12})"
+# Configurar la app de Streamlit
+st.title("Procesador de Archivos de Productos")
+st.write("Sube un archivo CSV y obtén un archivo Excel con los datos estructurados.")
 
-    # Crear listas para almacenar los datos extraídos
-    productos = []
-    clientes = []
+# Subir el archivo
+uploaded_file = st.file_uploader("Sube tu archivo CSV", type=["csv"])
 
-    # Iterar sobre cada fila del DataFrame
-    for index, row in df.iterrows():
-        # Extraer información del producto
-        match_producto = re.search(pattern_producto, str(row[0]))
-        if match_producto:
-            producto = {
-                'Número de serie': match_producto.group(1),
-                'Nombre': match_producto.group(2),
-                'Valor': match_producto.group(3),
-                'Fecha': match_producto.group(4)
-            }
-            productos.append(producto)
+if uploaded_file is not None:
+    # Procesar el archivo subido
+    excel_file = process_file(uploaded_file)
 
-        # Extraer información del cliente
-        match_cliente = re.search(pattern_cliente, str(row[0]))
-        if match_cliente:
-            cliente = {
-                'Nombre': match_cliente.group(1),
-                'Email': match_cliente.group(2),
-                'Teléfono': match_cliente.group(3)
-            }
-            clientes.append(cliente)
-
-    # Crear un nuevo DataFrame a partir de las listas
-    df_nuevo = pd.DataFrame(columns=['Número de serie', 'Nombre del producto', 'Valor', 'Fecha de compra', 'Nombre del cliente', 'Email', 'Teléfono'])
-
-    # Combinar la información de productos y clientes (aquí se asume una relación 1:1, ajustar si es necesario)
-    for i in range(len(productos)):
-        df_nuevo = df_nuevo.append(productos[i] | clientes[i], ignore_index=True)
-
-    # Guardar el DataFrame como un archivo Excel
-    df_nuevo.to_excel('resultado.xlsx', index=False)
-
-# Interfaz de Streamlit
-st.title("Extractor de Datos de CSV")
-
-url = st.text_input("Ingrese la URL del archivo CSV en GitHub")
-
-if st.button("Extraer"):
-    if url:
-        try:
-            extraer_datos(url)
-            st.success("Datos extraídos y exportados a Excel")
-        except Exception as e:
-            st.error(f"Error al procesar el archivo: {e}")
-    else:
-        st.warning("Ingrese una URL válida")
+    # Descargar el archivo procesado
+    st.download_button(
+        label="Descargar archivo procesado",
+        data=excel_file,
+        file_name="productos_procesados.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
