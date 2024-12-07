@@ -52,6 +52,10 @@ def process_file(uploaded_file):
 
 # Configurar la app de Streamlit
 st.title("Procesador de Archivos de Productos")
+
+# Subtítulo indicando el autor
+st.subheader("Desarrollado por Alejandro Gómez Franco")
+
 st.write("Sube un archivo CSV y obtén un archivo Excel con los datos estructurados.")
 
 # Subir el archivo
